@@ -66,20 +66,22 @@ def processar_arquivo(file_path):
         print(f"Consultando saldo para o cartão {numero_cartao}...")
 
         try:
-            # Localizar o campo do cartão (substitua pelo ID correto do campo no site)
-            campo_cartao = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, 'campo_cartao_id'))  # Substitua 'campo_cartao_id'
+            # Localizar o campo do cartão usando a classe (campo_input)
+            campo_cartao = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.CLASS_NAME, 'page_input-field__61j_k'))  # Usando a classe
             )
             campo_cartao.clear()
             campo_cartao.send_keys(numero_cartao)
 
-            # Clicar no botão de consulta (substitua pelo ID correto do botão no site)
-            botao_consultar = driver.find_element(By.ID, 'botao_consultar_id')  # Substitua 'botao_consultar_id'
+            # Aguardar o botão de consulta e clicar nele
+            botao_consultar = WebDriverWait(driver, 15).until(
+                EC.element_to_be_clickable((By.CLASS_NAME, 'page_submit-button__r0H3S'))  # Usando a classe
+            )
             botao_consultar.click()
 
             # Aguardar o saldo ser exibido
-            saldo = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, 'saldo_id'))  # Substitua 'saldo_id'
+            saldo = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.ID, 'saldo_id'))  # Substitua 'saldo_id' com o ID real do saldo
             ).text
 
             # Capturar data da consulta
