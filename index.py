@@ -6,19 +6,18 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import pandas as pd
 from datetime import datetime
 
-# Caminho para o driver na mesma pasta do código
+# Caminho para o ChromeDriver (na mesma pasta que o código)
 DRIVER_PATH = './chromedriver.exe'
 
 # Configurações do navegador
 options = webdriver.ChromeOptions()
 options.add_argument('--start-maximized')  # Iniciar o navegador maximizado
 options.add_argument('--disable-gpu')      # Melhorar compatibilidade
-options.add_argument('--disable-extensions')  # Desativar extensões
 options.add_argument('--headless')        # Opcional: executa sem interface gráfica
 
 # Inicializar o driver
 try:
-    driver = webdriver.Chrome(executable_path=DRIVER_PATH, options=options)
+    driver = webdriver.Chrome(service=webdriver.chrome.service.Service(DRIVER_PATH), options=options)
 except Exception as e:
     print("Erro ao iniciar o ChromeDriver:", e)
     exit()
@@ -35,11 +34,16 @@ try:
 except FileNotFoundError:
     df = pd.DataFrame(columns=['Nome', 'Cartão', 'Saldo', 'Data'])
 
-# Lista de cartões para consulta
-cartoes = [
-    {'nome': 'Fulano', 'cartao': '12345678901234'},
-    {'nome': 'Ciclano', 'cartao': '98765432109876'}
-]
+# Ler os dados do arquivo TXT
+arquivo_txt = 'cartoes.txt'
+try:
+    with open(arquivo_txt, 'r') as file:
+        linhas = file.readlines()
+        cartoes = [{'nome': linha.split(',')[0].strip(), 'cartao': linha.split(',')[1].strip()} for linha in linhas]
+except FileNotFoundError:
+    print(f"Erro: Arquivo {arquivo_txt} não encontrado. Certifique-se de que ele está na mesma pasta do código.")
+    driver.quit()
+    exit()
 
 # Abrir o site
 try:
