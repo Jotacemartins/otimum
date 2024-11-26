@@ -4,13 +4,12 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 import pandas as pd
 from datetime import datetime
 import time
 
-# Caminho para o ChromeDriver (na mesma pasta do código)
+# Caminho para o ChromeDriver
 DRIVER_PATH = './chromedriver.exe'
 
 # Configurações do navegador
@@ -29,13 +28,13 @@ def processar_arquivo(file_path):
         messagebox.showerror("Erro", f"Erro ao iniciar o ChromeDriver: {e}")
         return
 
-    # URL do site de consulta (substitua pela URL correta)
+    # URL do site de consulta
     SITE_URL = 'https://example.com/consulta-saldo'
 
     # Planilha para salvar os dados
     planilha = 'dados_cartoes.xlsx'
 
-    # Abrir a planilha existente ou criar uma nova
+    # Abrir ou criar a planilha
     try:
         df = pd.read_excel(planilha)
     except FileNotFoundError:
@@ -51,14 +50,6 @@ def processar_arquivo(file_path):
         driver.quit()
         return
 
-    # Abrir o site
-    try:
-        driver.get(SITE_URL)
-    except Exception as e:
-        messagebox.showerror("Erro", f"Erro ao acessar o site: {e}")
-        driver.quit()
-        return
-
     # Loop para cada cartão
     for pessoa in cartoes:
         nome = pessoa['nome']
@@ -66,43 +57,46 @@ def processar_arquivo(file_path):
         print(f"Consultando saldo para o cartão {numero_cartao}...")
 
         try:
-            # Localizar o campo do cartão usando a classe
-            campo_cartao = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.CLASS_NAME, 'page_input-field__61j_k'))  # Usando a classe
+            # Acessar o site novamente para cada consulta
+            driver.get(SITE_URL)
+
+            # Localizar o campo do cartão e preencher
+            campo_cartao = WebDriverWait(driver, 20).until(
+                EC.presence_of_element_located((By.CLASS_NAME, 'page_input-field__61j_k'))
             )
             campo_cartao.clear()
             campo_cartao.send_keys(numero_cartao)
 
-            # Aguardar o botão de consulta e clicar nele
-            botao_consultar = WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.CLASS_NAME, 'page_submit-button__r0H3S'))  # Usando a classe
+            # Localizar e clicar no botão de consulta
+            botao_consultar = WebDriverWait(driver, 20).until(
+                EC.element_to_be_clickable((By.CLASS_NAME, 'page_submit-button__r0H3S'))
             )
             botao_consultar.click()
 
-            # Aguardar a exibição das informações de saldo
-            container_info = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.CLASS_NAME, 'page_card-info__gM7vJ'))  # Classe do container de informações
+            # Aguardar a exibição dos dados
+            container_info = WebDriverWait(driver, 20).until(
+                EC.presence_of_element_located((By.CLASS_NAME, 'page_card-info__gM7vJ'))
             )
 
-            # Capturar o saldo
+            # Capturar saldo e data da consulta
             saldo = container_info.find_element(By.CLASS_NAME, 'page_saldo__5B0iu').text
-            saldo = saldo.replace('Saldo: R$ ', '').strip()  # Limpar texto para manter só o valor
+            saldo = saldo.replace('Saldo: R$ ', '').strip()
 
-            # Capturar data da consulta
+            # Registrar data da consulta
             data_consulta = datetime.now().strftime('%d/%m/%Y %H:%M')
 
             # Salvar dados na planilha
             df = df.append({'Nome': nome, 'Cartão': numero_cartao, 'Saldo': saldo, 'Data': data_consulta}, ignore_index=True)
 
-            # Capturar um print da tela
-            driver.save_screenshot(f'print_{numero_cartao}.png')
+            # Tirar print da tela
+            nome_arquivo_print = f'print_{numero_cartao}.png'
+            driver.save_screenshot(nome_arquivo_print)
+            print(f"Print salvo: {nome_arquivo_print}")
 
             print(f"Consulta realizada com sucesso para o cartão {numero_cartao}. Saldo: {saldo}")
 
         except TimeoutException:
             print(f"Erro: Tempo excedido para consultar o cartão {numero_cartao}.")
-        except NoSuchElementException:
-            print(f"Erro: Elementos necessários não encontrados para o cartão {numero_cartao}.")
         except Exception as e:
             print(f"Erro inesperado para o cartão {numero_cartao}: {e}")
 
