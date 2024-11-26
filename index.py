@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import pandas as pd
 from datetime import datetime
 import time
@@ -16,11 +17,9 @@ DRIVER_PATH = './chromedriver.exe'
 options = webdriver.ChromeOptions()
 options.add_argument('--start-maximized')  # Iniciar o navegador maximizado
 options.add_argument('--disable-gpu')      # Melhorar compatibilidade
-# options.add_argument('--headless')        # Opcional: executa sem interface gráfica
 
 
 def processar_arquivo(file_path):
-    # Inicializar o driver
     try:
         service = Service(DRIVER_PATH)
         driver = webdriver.Chrome(service=service, options=options)
@@ -28,19 +27,14 @@ def processar_arquivo(file_path):
         messagebox.showerror("Erro", f"Erro ao iniciar o ChromeDriver: {e}")
         return
 
-    # URL do site de consulta
-    SITE_URL = 'https://example.com/consulta-saldo'
-
-    # Planilha para salvar os dados
+    SITE_URL = 'https://example.com/consulta-saldo'  # Atualize com a URL real
     planilha = 'dados_cartoes.xlsx'
 
-    # Abrir ou criar a planilha
     try:
         df = pd.read_excel(planilha)
     except FileNotFoundError:
         df = pd.DataFrame(columns=['Nome', 'Cartão', 'Saldo', 'Data'])
 
-    # Ler os dados do arquivo TXT
     try:
         with open(file_path, 'r') as file:
             linhas = file.readlines()
@@ -50,69 +44,70 @@ def processar_arquivo(file_path):
         driver.quit()
         return
 
-    # Loop para cada cartão
     for pessoa in cartoes:
         nome = pessoa['nome']
         numero_cartao = pessoa['cartao']
-        print(f"Consultando saldo para o cartão {numero_cartao}...")
+        print(f"Iniciando consulta para {numero_cartao}...")
 
         try:
-            # Acessar o site novamente para cada consulta
+            # Acessar o site
             driver.get(SITE_URL)
 
-            # Localizar o campo do cartão e preencher
-            campo_cartao = WebDriverWait(driver, 20).until(
+            # Garantir que a página carregue completamente
+            WebDriverWait(driver, 30).until(
                 EC.presence_of_element_located((By.CLASS_NAME, 'page_input-field__61j_k'))
             )
+
+            # Localizar e preencher o campo do cartão
+            campo_cartao = driver.find_element(By.CLASS_NAME, 'page_input-field__61j_k')
             campo_cartao.clear()
             campo_cartao.send_keys(numero_cartao)
+            print(f"Número do cartão inserido: {numero_cartao}")
 
-            # Localizar e clicar no botão de consulta
-            botao_consultar = WebDriverWait(driver, 20).until(
-                EC.element_to_be_clickable((By.CLASS_NAME, 'page_submit-button__r0H3S'))
-            )
+            # Localizar e clicar no botão
+            botao_consultar = driver.find_element(By.CLASS_NAME, 'page_submit-button__r0H3S')
             botao_consultar.click()
+            print("Botão 'Consultar saldo' clicado.")
 
-            # Aguardar a exibição dos dados
-            container_info = WebDriverWait(driver, 20).until(
+            # Aguardar a resposta
+            container_info = WebDriverWait(driver, 30).until(
                 EC.presence_of_element_located((By.CLASS_NAME, 'page_card-info__gM7vJ'))
             )
+            print("Informações do cartão carregadas.")
 
-            # Capturar saldo e data da consulta
+            # Capturar saldo e data
             saldo = container_info.find_element(By.CLASS_NAME, 'page_saldo__5B0iu').text
             saldo = saldo.replace('Saldo: R$ ', '').strip()
 
-            # Registrar data da consulta
             data_consulta = datetime.now().strftime('%d/%m/%Y %H:%M')
 
-            # Salvar dados na planilha
+            # Salvar na planilha
             df = df.append({'Nome': nome, 'Cartão': numero_cartao, 'Saldo': saldo, 'Data': data_consulta}, ignore_index=True)
 
-            # Tirar print da tela
+            # Salvar print da página
             nome_arquivo_print = f'print_{numero_cartao}.png'
             driver.save_screenshot(nome_arquivo_print)
-            print(f"Print salvo: {nome_arquivo_print}")
+            print(f"Consulta concluída para {numero_cartao}. Saldo: {saldo}. Print salvo: {nome_arquivo_print}")
 
-            print(f"Consulta realizada com sucesso para o cartão {numero_cartao}. Saldo: {saldo}")
-
-        except TimeoutException:
-            print(f"Erro: Tempo excedido para consultar o cartão {numero_cartao}.")
+        except TimeoutException as e:
+            print(f"Erro de tempo ao consultar o cartão {numero_cartao}: {e}")
+        except NoSuchElementException as e:
+            print(f"Elemento necessário não encontrado para o cartão {numero_cartao}: {e}")
         except Exception as e:
-            print(f"Erro inesperado para o cartão {numero_cartao}: {e}")
+            print(f"Erro inesperado ao processar {numero_cartao}: {e}")
 
-        # Delay de 10 segundos entre as consultas
+        # Delay entre consultas
         time.sleep(10)
 
-    # Salvar a planilha atualizada
+    # Salvar a planilha
     df.to_excel(planilha, index=False)
-    messagebox.showinfo("Sucesso", f"Dados salvos na planilha: {planilha}")
+    print(f"Dados salvos na planilha: {planilha}")
 
-    # Fechar o navegador
     driver.quit()
+    messagebox.showinfo("Sucesso", f"Consultas concluídas e dados salvos na planilha: {planilha}")
 
 
 def selecionar_arquivo():
-    # Abrir janela para selecionar arquivo
     file_path = filedialog.askopenfilename(
         title="Selecione o arquivo TXT",
         filetypes=(("Arquivos de Texto", "*.txt"), ("Todos os Arquivos", "*.*"))
@@ -121,17 +116,13 @@ def selecionar_arquivo():
         processar_arquivo(file_path)
 
 
-# Interface gráfica
 root = tk.Tk()
 root.title("Consulta de Saldo de Cartões")
 
-# Configurar a janela
 frame = tk.Frame(root, padx=20, pady=20)
 frame.pack()
 
-# Botão para selecionar o arquivo
 btn_selecionar = tk.Button(frame, text="Selecionar Arquivo TXT", command=selecionar_arquivo, padx=10, pady=5)
 btn_selecionar.pack()
 
-# Rodar a interface
 root.mainloop()
