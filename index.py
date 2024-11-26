@@ -1,3 +1,12 @@
+<div class="page_card-info__gM7vJ"><div class="page_data__LemoY">Número: 65588011083065605</div><div class="page_saldo__5B0iu">Saldo: R$&nbsp;408,25</div><div class="page_data__LemoY">Data Consulta: 26/11/2024 15:29</div></div>
+
+
+
+
+
+
+
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from selenium import webdriver
