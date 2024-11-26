@@ -1,12 +1,3 @@
-<div class="page_card-info__gM7vJ"><div class="page_data__LemoY">Número: 65588011083065605</div><div class="page_saldo__5B0iu">Saldo: R$&nbsp;408,25</div><div class="page_data__LemoY">Data Consulta: 26/11/2024 15:29</div></div>
-
-
-
-
-
-
-
-
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from selenium import webdriver
@@ -75,7 +66,7 @@ def processar_arquivo(file_path):
         print(f"Consultando saldo para o cartão {numero_cartao}...")
 
         try:
-            # Localizar o campo do cartão usando a classe (campo_input)
+            # Localizar o campo do cartão usando a classe
             campo_cartao = WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located((By.CLASS_NAME, 'page_input-field__61j_k'))  # Usando a classe
             )
@@ -88,10 +79,14 @@ def processar_arquivo(file_path):
             )
             botao_consultar.click()
 
-            # Aguardar o saldo ser exibido
-            saldo = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.ID, 'saldo_id'))  # Substitua 'saldo_id' com o ID real do saldo
-            ).text
+            # Aguardar a exibição das informações de saldo
+            container_info = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.CLASS_NAME, 'page_card-info__gM7vJ'))  # Classe do container de informações
+            )
+
+            # Capturar o saldo
+            saldo = container_info.find_element(By.CLASS_NAME, 'page_saldo__5B0iu').text
+            saldo = saldo.replace('Saldo: R$ ', '').strip()  # Limpar texto para manter só o valor
 
             # Capturar data da consulta
             data_consulta = datetime.now().strftime('%d/%m/%Y %H:%M')
