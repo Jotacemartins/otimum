@@ -30,10 +30,8 @@ def processar_arquivo(file_path):
     SITE_URL = 'https://example.com/consulta-saldo'  # Atualize com a URL real
     planilha = 'dados_cartoes.xlsx'
 
-    try:
-        df = pd.read_excel(planilha)
-    except FileNotFoundError:
-        df = pd.DataFrame(columns=['Nome', 'Cartão', 'Saldo', 'Data'])
+    # Inicializar a lista para armazenar os dados
+    dados = []
 
     try:
         with open(file_path, 'r') as file:
@@ -81,8 +79,8 @@ def processar_arquivo(file_path):
 
             data_consulta = datetime.now().strftime('%d/%m/%Y %H:%M')
 
-            # Salvar na planilha
-            df = df.append({'Nome': nome, 'Cartão': numero_cartao, 'Saldo': saldo, 'Data': data_consulta}, ignore_index=True)
+            # Adicionar os dados à lista
+            dados.append({'Nome': nome, 'Cartão': numero_cartao, 'Saldo': saldo, 'Data': data_consulta})
 
             # Salvar print da página
             nome_arquivo_print = f'print_{numero_cartao}.png'
@@ -99,9 +97,13 @@ def processar_arquivo(file_path):
         # Delay entre consultas
         time.sleep(10)
 
-    # Salvar a planilha
-    df.to_excel(planilha, index=False)
-    print(f"Dados salvos na planilha: {planilha}")
+    # Converter a lista em DataFrame e salvar na planilha
+    if dados:
+        df = pd.DataFrame(dados)
+        df.to_excel(planilha, index=False)
+        print(f"Dados salvos na planilha: {planilha}")
+    else:
+        print("Nenhum dado foi processado.")
 
     driver.quit()
     messagebox.showinfo("Sucesso", f"Consultas concluídas e dados salvos na planilha: {planilha}")
