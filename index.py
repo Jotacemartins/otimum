@@ -8,6 +8,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 import pandas as pd
 from datetime import datetime
+import time
 
 # Caminho para o ChromeDriver (na mesma pasta do código)
 DRIVER_PATH = './chromedriver.exe'
@@ -16,7 +17,7 @@ DRIVER_PATH = './chromedriver.exe'
 options = webdriver.ChromeOptions()
 options.add_argument('--start-maximized')  # Iniciar o navegador maximizado
 options.add_argument('--disable-gpu')      # Melhorar compatibilidade
-options.add_argument('--headless')        # Opcional: executa sem interface gráfica
+# options.add_argument('--headless')        # Opcional: executa sem interface gráfica
 
 
 def processar_arquivo(file_path):
@@ -98,6 +99,9 @@ def processar_arquivo(file_path):
             print(f"Erro: Elementos necessários não encontrados para o cartão {numero_cartao}.")
         except Exception as e:
             print(f"Erro inesperado para o cartão {numero_cartao}: {e}")
+
+        # Delay de 10 segundos entre as consultas
+        time.sleep(10)
 
     # Salvar a planilha atualizada
     df.to_excel(planilha, index=False)
