@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.chrome.service import Service
 import pandas as pd
 from datetime import datetime
 
@@ -15,9 +16,10 @@ options.add_argument('--start-maximized')  # Iniciar o navegador maximizado
 options.add_argument('--disable-gpu')      # Melhorar compatibilidade
 options.add_argument('--headless')        # Opcional: executa sem interface gráfica
 
-# Inicializar o driver
+# Inicializar o serviço e o driver
 try:
-    driver = webdriver.Chrome(service=webdriver.chrome.service.Service(DRIVER_PATH), options=options)
+    service = Service(DRIVER_PATH)
+    driver = webdriver.Chrome(service=service, options=options)
 except Exception as e:
     print("Erro ao iniciar o ChromeDriver:", e)
     exit()
